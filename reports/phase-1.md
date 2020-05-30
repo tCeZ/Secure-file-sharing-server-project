@@ -1,7 +1,7 @@
 # CS 1653 Project Phase-1
 
-Ted (Ce) Zhang, cez17@pitt.edu, TeddyZ95
-Zhouxin Tian, zht14@pitt.edu, zht14
+Ted (Ce) Zhang, cez17@pitt.edu, TeddyZ95\
+Zhouxin Tian, zht14@pitt.edu, zht14\
  
 
 ## Section 1 - Security Properties
