@@ -52,14 +52,17 @@ public abstract class Client {
             
             disconnect();
             sock.close();*/
-            return true;
+            
         }
         catch(Exception e)
         {
             System.err.println("Error: " + e.getMessage());
             e.printStackTrace(System.err);
+            return false;
         }
-        return false;
+        
+        return isConnected();
+       
         
         
 
