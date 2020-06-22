@@ -1,4 +1,4 @@
-import java.util.list;
+import java.util.*;
 public class Token implements UserToken
 {
     private String Issuer;
@@ -6,6 +6,12 @@ public class Token implements UserToken
     private ArrayList<String> Groups;
     
     
+    public Token(String Issuer, String Subject)
+    {
+        this.Issuer = Issuer;
+        this.Subject = Subject;
+        this.Groups = new ArrayList<String>();
+    }
     public Token(String Issuer, String Subject, ArrayList<String> Groups)
     {
         this.Issuer = Issuer;
@@ -30,7 +36,8 @@ public class Token implements UserToken
     
     public List<String>getGroups()
     {
-        return this.Groups;
+        List<String> LGroups = new ArrayList<String>(this.Groups);
+        return LGroups;
     }
 
 
