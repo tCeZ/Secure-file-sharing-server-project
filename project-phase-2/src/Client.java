@@ -62,11 +62,6 @@ public abstract class Client {
         }
         
         return isConnected();
-       
-        
-        
-
-		/* TODO: Write this method */
 
 	}
 
