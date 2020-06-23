@@ -65,6 +65,8 @@ User who is the owner of the group can delete other user from group by providing
 User who is the owner of the group can list members in group by providing group name and token through terminal
 
 
+
+
 The File Server:
 The operations that user can do are shown on terminal in terms of number for etc: 1. getToken 2.createUser (User can choose the operation and then input required information to continue)
 
