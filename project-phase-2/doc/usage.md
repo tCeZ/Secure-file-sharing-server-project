@@ -25,3 +25,63 @@ The file server will create a shared_files inside the working directory if one d
 To reset the Group Server, delete the file `UserList.bin`
 
 To reset the File Server, delete the `FileList.bin` file and the `shared_files/` directory.
+
+
+## Running the Client Application
+- Enter the directory containing 'ClientApp.class'
+- Type 'java ClientApp'
+
+The Group Server:
+The operations that user can do are shown on terminal in terms of number for etc: 1. getToken 2.createUser (User can choose the operation and then input required information to continue)
+
+1.boolean connect(String server, int port)
+Ask user for the port number and server name or use the default one and then try to connect them to the group server(when they try to log in)
+
+2.void disconnect()
+If user input is disconnect or they shutdown the terminal, then the disconnect functionality will be triggered
+
+3.UserToken getToken(String username)
+User get token by input username
+
+4.boolean createUser(String username, UserToken token)
+User with priority can new user by providing token and new username through terminal
+
+5.boolean deleteUser(String username, UserToken Token)
+User with priority can delete other user by providing token and username through terminal
+
+6.boolean createGroup(String groupname, UserToken token)
+User can create new group by providing new group name and token through terminal
+
+7.boolean deleteGroup(String groupname, UserToken token)
+User can delete the existing group by providing group name and token through terminal
+
+8.boolean addUserToGroup(String user, String group, UserToken token)
+User who is the owner of the group can add other user to his or her group by providing username of that user he wants to add, group name and token through terminal
+
+9.deleteUserFromGroup(String user, String group, userToken token)
+User who is the owner of the group can delete other user from group by providing username of that user he wants to delete, group name and token through terminal
+
+10.List<String> listMembers(String group, UserToken token)
+User who is the owner of the group can list members in group by providing group name and token through terminal
+
+
+The File Server:
+The operations that user can do are shown on terminal in terms of number for etc: 1. getToken 2.createUser (User can choose the operation and then input required information to continue)
+
+1.boolean connect(String server, int port)
+Ask user for the port number and server name or use the default one and then try to connect them to the group server(when they try to log in)
+
+2.void disconnect()
+If user input is disconnect or they shutdown the terminal, then the disconnect functionality will be triggered
+
+3.List<String> listFiles(UserToken token)
+User can list all files that he or she can accessed by providing token through terminal
+
+4.boolean upload(String sourceFile, String destFile, String group, UserToken token)
+User can upload file to share with people in same group by providing sourcefile, destfile, group name and token through terminal
+
+5.boolean download(String sourceFile, String destFile, UserToken token)
+User can download files that belong to the group he or she is in by providing sourcefile, destfile and token through terminal
+
+6.boolean delete(String filename, UserToken token)
+User can delete the file that belong to the group he or she is in by providing file name and token through terminal
