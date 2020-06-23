@@ -31,7 +31,7 @@ public class ClientApp
 		{
 			// connect to the only one group server lol
 			// ask for server IP
-			System.out.print("Enter IP Address or Hostnmae of the Group Server: ");
+			System.out.print("Enter IP Address or Hostname of the Group Server: ");
 			hostN = s.nextLine();
 
 			System.out.print("Enter your username for the specified server: ");
@@ -45,13 +45,14 @@ public class ClientApp
 				if (usrT != null)
 				{
 					tokencheck = true;
-					g.disconnect();
+					//g.disconnect();
 				}
 				//did not find a token for that username - uh-roh
 				else 
 				{
 					System.out.println("Username is invalid");
 					g.disconnect();
+                    continue;
 				}
 			}
 			else
@@ -62,8 +63,11 @@ public class ClientApp
 
 			//connecting to server if token was verified
 			while(tokencheck)
+            {
+                
+            
 			
-				System.out.println( "Main Menu: \n" +
+				System.out.print( "Main Menu: \n" +
 									"Enter 1 to connect to File Server" + 
 									"Enter 2 to create user \n " +
 									"Enter 3 to delete user \n " + 
@@ -368,7 +372,8 @@ public class ClientApp
 			}		
 		}
 				
-	}
+	 }
+    }
 }
 
 

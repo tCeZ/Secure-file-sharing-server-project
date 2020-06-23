@@ -1,5 +1,6 @@
 
 import java.util.List;
+import java.io.*;
 
 /**
  * A simple interface to the token data structure that will be
@@ -10,7 +11,7 @@ import java.util.List;
  * server.
  *
  */
-public interface UserToken
+public interface UserToken 
 {
     /**
      * This method should return a string describing the issuer of

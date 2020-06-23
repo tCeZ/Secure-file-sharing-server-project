@@ -1,5 +1,6 @@
 import java.util.*;
-public class Token implements UserToken
+import java.io.*;
+public class Token implements UserToken, Serializable
 {
     private String Issuer;
     private String Subject;
