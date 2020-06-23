@@ -68,7 +68,7 @@ User who is the owner of the group can list members in group by providing group 
 
 
 The File Server:
-The operations that user can do are shown on terminal in terms of number for etc: 1. getToken 2.createUser (User can choose the operation and then input required information to continue)
+The operations that user can do are shown on terminal in terms of number for etc: 1.upload 2.delete (User can choose the operation and then input required information to continue)
 
 1.boolean connect(String server, int port)
 Ask user for the port number and server name or use the default one and then try to connect them to the group server(when they try to log in)
