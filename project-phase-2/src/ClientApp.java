@@ -17,6 +17,7 @@ public class ClientApp
 		UserToken usrT = null; // token to verify users
 		String hostN;
 		String userN;
+        String userNN;
 		String groupN = new String();
 		String input;
 		int mchoice;
@@ -31,10 +32,10 @@ public class ClientApp
 		{
 			// connect to the only one group server lol
 			// ask for server IP
-			System.out.println("Enter IP Address or Hostnmae of the Group Server: ");
+			System.out.print("Enter IP Address or Hostnmae of the Group Server: ");
 			hostN = s.nextLine();
 
-			System.out.println("Enter your username for the specified server: ");
+			System.out.print("Enter your username for the specified server: ");
 			userN = s.nextLine();
 
 			//connect to the specified hostname and hard port
@@ -45,13 +46,14 @@ public class ClientApp
 				if (usrT != null)
 				{
 					tokencheck = true;
-					g.disconnect();
+					
 				}
 				//did not find a token for that username - uh-roh
 				else 
 				{
 					System.out.println("Username is invalid");
 					g.disconnect();
+                    
 				}
 			}
 			else
@@ -64,7 +66,7 @@ public class ClientApp
 			//connecting to server if token was verified
 			while(tokencheck)
 			{
-				System.out.println( "Main Menu: \n " +
+				System.out.print( "Main Menu: \n " +
 									"Enter 1 to connect to File Server \n " + 
 									"Enter 2 to create user \n " +
 									"Enter 3 to delete user \n " + 
@@ -73,8 +75,8 @@ public class ClientApp
 									"Enter 6 to add user to group \n " +
 									"Enter 7 to delete user from group \n " +
 									"Enter 8 to listMembers \n " +
-									"Enter 0 to logout \n " + 
-									userN + ": " );	
+									"Enter 0 to logout: \n " +
+									 userN + ": ");	
 
 				input = s.nextLine();
 
@@ -91,13 +93,13 @@ public class ClientApp
 				{
 					case 1:
 						//get port of file server
-						System.out.println("Enter the port number of the File Server " + userN + ": ");
+						System.out.print("Enter the port number of the File Server: ");
 						//System.out.println("Enter the port number of the File Server \n” + userN ": ");
 						input = s.nextLine();
 						portN = Integer.parseInt(input);
 
 						//get hostname or IP of file server
-						System.out.println("Enter IP Address or Hostname of the File Server " +  userN + ": ");
+						System.out.print("Enter IP Address or Hostname of the File Server: ");
 						fshostN = s.nextLine();
 						
 
@@ -152,10 +154,10 @@ public class ClientApp
 
 									case 2: 
 
-										System.out.println("Path to file for upload " + userN + ": " );
+										System.out.print("Path to file for upload " + userN + ": " );
 										uploadfile = s.nextLine();
 
-										System.out.println("Path for file to be uploaded too " + userN + ": ");
+										System.out.print("Path for file to be uploaded too " + userN + ": ");
 										dest = s.nextLine();
 
 										if (f.upload(uploadfile, dest, groupN, usrT))
@@ -171,10 +173,10 @@ public class ClientApp
 
 									case 3: 
 
-										System.out.println("Path to file to download " + userN + ": " );
+										System.out.print("Path to file to download " + userN + ": " );
 										downloadf = s.nextLine();
 
-										System.out.println("Path for file to be downloaded to " + userN + ": ");
+										System.out.print("Path for file to be downloaded to " + userN + ": ");
 										dest = s.nextLine();
 
 										if (f.download(downloadf, dest, usrT))
@@ -190,7 +192,7 @@ public class ClientApp
 
 									case 4: 
 
-										System.out.println("Filename to be deleted " + userN + ": ");
+										System.out.print("Filename to be deleted " + userN + ": ");
 										delf = s.nextLine();
 
 										if (f.delete(delf, usrT))
@@ -219,12 +221,12 @@ public class ClientApp
 
 								}
 							}
-						}
-
+                        }
 						else
 						{
 							System.out.println("Error connecting to File Server. Try Again.");
 						}
+                        break;
 
 
 					case 2: 
@@ -232,10 +234,10 @@ public class ClientApp
 						//check to see if admin
 						if (usrT.getGroups().contains("ADMIN"))
 						{
-							System.out.println("Username to create" + userN + ": ");
-							userN = s.nextLine();
+							System.out.print("Username to create: ");
+							userNN = s.nextLine();
 
-							if(g.createUser(userN, usrT))
+							if(g.createUser(userNN, usrT))
 							{
 								System.out.println("Created User!");
 							}
@@ -252,10 +254,10 @@ public class ClientApp
 						//check to see if admin
 						if (usrT.getGroups().contains("ADMIN"))
 						{
-							System.out.println("Username to delete" + userN + ": ");
-							userN = s.nextLine();
+							System.out.print("Username to delete: ");
+							userNN = s.nextLine();
 
-							if(g.deleteUser(userN, usrT))
+							if(g.deleteUser(userNN, usrT))
 							{
 								System.out.println("Deleted User!");
 							}
@@ -272,7 +274,7 @@ public class ClientApp
 						//check to see if admin
 						if (usrT.getGroups().contains("ADMIN"))
 						{
-							System.out.println("Group name to create:" + userN + ": ");
+							System.out.print("Group name to create: ");
 							groupN = s.nextLine();
 
 							if(g.createGroup(groupN, usrT))
@@ -292,7 +294,7 @@ public class ClientApp
 						//check to see if admin
 						if (usrT.getGroups().contains("ADMIN"))
 						{
-							System.out.println("Group name to create:" + userN + ": ");
+							System.out.print("Group name to create: ");
 							groupN = s.nextLine();
 
 							if(g.deleteGroup(groupN, usrT))
@@ -309,13 +311,13 @@ public class ClientApp
 
 					case 6: 
 
-						System.out.println("Group name: " + userN + ": ");
+						System.out.print("Group name: ");
 						groupN = s.nextLine();
 
-						System.out.println("User name to add to group:" + userN + ": ");
-						userN = s.nextLine();
+						System.out.print("User name to add to group: ");
+						userNN = s.nextLine();
 
-						if(g.addUserToGroup(userN, groupN, usrT))
+						if(g.addUserToGroup(userNN, groupN, usrT))
 						{
 							System.out.println("Added user to group!");
 						}
@@ -328,13 +330,13 @@ public class ClientApp
 
 					case 7: 
 
-						System.out.println("Group name: " + userN + ": ");
+						System.out.println("Group name: ");
 						groupN = s.nextLine();
 
-						System.out.println("User name to delete to group:" + userN + ": ");
-						userN = s.nextLine();
+						System.out.print("User name to delete to group: ");
+						userNN = s.nextLine();
 
-						if(g.deleteUserFromGroup(userN, groupN, usrT))
+						if(g.deleteUserFromGroup(userNN, groupN, usrT))
 						{			
 							System.out.println("Removed user to group!");
 						}
@@ -347,7 +349,7 @@ public class ClientApp
 
 					case 8: 
 
-						System.out.println("Group name: " + userN + ": ");
+						System.out.print("Group name: ");
 						groupN = s.nextLine();
 
 						listmems = g.listMembers(groupN, usrT);
