@@ -92,7 +92,42 @@ public static void main(String[] args) {
 					
 
 					//file server menu
-					if (f.connect())
+					if (f.connect(fshostN, portN))
+					{
+						boolean conn2 = true;
+						int mchoice2;
+
+						while(conn2)
+						{
+							System.out.print("Enter 1 to list Files in the Server \n" +
+								 "enter 2 to upload file \n" +
+								 "enter 3 to download file \n" +
+								 "enter 4 to upload a file to the File Server \n" +
+								 "enter 6 to delete a file from the File Server \n" +
+								 "enter 0 to disconnect from File Server \n" +
+								 userN + ": ");
+
+							input = s.nextLine();
+
+							try
+							{
+								mchoice2 = Integer.parseInt(input);
+							}
+							catch(Exception e)
+							{
+								mchoice2 = -1; 
+							}
+
+							switch (mchoice2)
+							{
+								case 1: 
+
+									
+							}
+
+
+						}
+					}
 
 
 				case 2: 
