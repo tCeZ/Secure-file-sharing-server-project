@@ -33,11 +33,11 @@ public abstract class Client {
 		System.out.println("attempting to connect");
         try
         {
-            final Socket sock = new Socket(server, port);
+            sock = new Socket(server, port);
             System.out.println("Connected to " + server + " on port " +String.valueOf(port));
             
-            final ObjectOutputStream output = new ObjectOutputStream(sock.getOutputStream());
-            final ObjectInputStream input = new ObjectInputStream(sock.getInputStream());
+            output = new ObjectOutputStream(sock.getOutputStream());
+            input = new ObjectInputStream(sock.getInputStream());
             
             /*Envelope msg = null, resp = null;
             
@@ -58,7 +58,6 @@ public abstract class Client {
         {
             System.err.println("Error: " + e.getMessage());
             e.printStackTrace(System.err);
-            return false;
         }
         
         return isConnected();
