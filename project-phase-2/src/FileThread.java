@@ -8,6 +8,7 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.util.ArrayList;
 
 public class FileThread extends Thread
 {
@@ -36,7 +37,39 @@ public class FileThread extends Thread
 				// Handler to list files that this user is allowed to see
 				if(e.getMessage().equals("LFILES"))
 				{
-				    /* TODO: Write this handler */
+				    if(e.getObjContents().size() < 1)
+					{
+						response = new Envelope("FAIL-BADCONTENTS");
+					}
+					else
+					{
+						if(e.getObjContents().get(0) == null) {
+							response = new Envelope("FAIL-BADTOKEN");
+						}
+						else
+						{
+							// extracting the user token
+							UserToken yourToken = (UserToken)e.getObjContents().get(0); 
+							String username = yourToken.getSubject();
+							String outputStr;
+							List<ShareFile> fullFileList = FileServer.fileList.getFiles();
+							List<String> userFileList = new ArrayList<String>();
+							if (fullFileList != null)
+							{
+								for (ShareFile sf: fullFileList)
+								{
+									if (yourToken.getGroups().contains(sf.getGroup()))
+									{
+										userFileList.add(sf.getPath() + "\t(" + sf.getOwner() + "/" + sf.getGroup() + ")");
+									}
+								}
+							}
+
+							response = new Envelope("OK"); //Success
+							response.addObject(userFileList);
+						}
+					}
+					output.writeObject(response);
 				}
 				if(e.getMessage().equals("UPLOADF"))
 				{
