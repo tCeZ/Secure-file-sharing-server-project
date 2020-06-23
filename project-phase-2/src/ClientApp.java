@@ -31,10 +31,10 @@ public class ClientApp
 		{
 			// connect to the only one group server lol
 			// ask for server IP
-			System.out.println("Enter IP Address or Hostnmae of the Group Server: \n");
+			System.out.print("Enter IP Address or Hostnmae of the Group Server: ");
 			hostN = s.nextLine();
 
-			System.out.println("Enter your username for the specified server: \n");
+			System.out.print("Enter your username for the specified server: ");
 			userN = s.nextLine();
 
 			//connect to the specified hostname and hard port
