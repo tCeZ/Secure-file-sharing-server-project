@@ -60,7 +60,6 @@ public class ClientApp
 			{
 				System.out.println("Failed to connect to Group Server");
 
-				//System.out.println(“Failed to connect to Group Server");
 			}
 
 			//connecting to server if token was verified
@@ -112,14 +111,16 @@ public class ClientApp
 							String dest;
 							String downloadf;
 							String delf;
+                            String groupShare;
 
 							while(conn2)
 							{
-								System.out.print("Enter 1 to list Files in the Server \n " +
-									 "enter 2 to upload file \n " +
-									 "enter 3 to download file \n " +
-									 "enter 4 to delete a file from the File Server \n " +
-									 "enter 0 to disconnect from File Server \n " +
+								System.out.print(
+                                     " Enter 1 to list Files in the Server \n " +
+									 "Enter 2 to upload file \n " +
+									 "Enter 3 to download file \n " +
+									 "Enter 4 to delete a file from the File Server \n " +
+									 "Enter 0 to disconnect from File Server \n " +
 									 userN + ": ");
 
 								input = s.nextLine();
@@ -154,13 +155,15 @@ public class ClientApp
 
 									case 2: 
 
-										System.out.print("Path to file for upload " + userN + ": " );
+										System.out.print("Path to file for upload: " );
 										uploadfile = s.nextLine();
 
-										System.out.print("Path for file to be uploaded too " + userN + ": ");
+										System.out.print("Name for file to be shown on file server: ");
 										dest = s.nextLine();
-
-										if (f.upload(uploadfile, dest, groupN, usrT))
+                                        
+                                        System.out.print("Name of the group to share with: ");
+                                        groupShare = s.nextLine();
+										if (f.upload(uploadfile, dest, groupShare, usrT))
 										{
 											System.out.println("Successfully uploaded file!");
 										}
@@ -173,10 +176,10 @@ public class ClientApp
 
 									case 3: 
 
-										System.out.print("Path to file to download " + userN + ": " );
+										System.out.print("Name of file on file list to be downloaded: " );
 										downloadf = s.nextLine();
 
-										System.out.print("Path for file to be downloaded to " + userN + ": ");
+										System.out.print("Name of file to shown on local: ");
 										dest = s.nextLine();
 
 										if (f.download(downloadf, dest, usrT))
@@ -192,7 +195,7 @@ public class ClientApp
 
 									case 4: 
 
-										System.out.print("Filename to be deleted " + userN + ": ");
+										System.out.print("Filename to be deleted: ");
 										delf = s.nextLine();
 
 										if (f.delete(delf, usrT))
@@ -330,7 +333,7 @@ public class ClientApp
 
 					case 7: 
 
-						System.out.println("Group name: ");
+						System.out.print("Group name: ");
 						groupN = s.nextLine();
 
 						System.out.print("User name to delete to group: ");
