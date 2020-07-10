@@ -8,14 +8,13 @@ import java.util.*;
 import java.security.*;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import javax.crypto.*;
-import java.io.*;
-import javax.crypto.spec.IvParameterSpec;
 import java.lang.*;
 
 public class GroupThread extends Thread 
 {
 	private final Socket socket;
 	private GroupServer my_gs;
+    
 	
 	public GroupThread(Socket _socket, GroupServer _gs)
 	{
@@ -26,6 +25,7 @@ public class GroupThread extends Thread
 	public void run()
 	{
 		boolean proceed = true;
+        Security.addProvider(new BouncyCastleProvider());
 
 		try
 		{
@@ -43,15 +43,29 @@ public class GroupThread extends Thread
 				if(message.getMessage().equals("GET"))//Client wants a token
 				{
 					String username = (String)message.getObjContents().get(0); //Get the username
+                    String userTokenName = (String)message.getObjContents().get(1); // Get the token's user name which a specific user wants to request
 					if(username == null)
 					{
 						response = new Envelope("FAIL");
 						response.addObject(null);
 						output.writeObject(response);
 					}
+                    else if(userTokenName == null)
+                    {
+                        response = new Envelope("FAIL");
+						response.addObject(null);
+						output.writeObject(response);
+                    }
 					else
 					{
-						UserToken yourToken = createToken(username); //Create a token
+						UserToken yourToken = createToken(username, userTokenName, message.getMessage()); //Create a token
+                        if(yourToken == null)
+                        {
+                            response = new Envelope("FAIL");
+                            response.addObject(null);
+                            output.writeObject(response);
+                        
+                        }
 						
 						//Respond to the client. On error, the client will receive a null token
 						response = new Envelope("OK");
@@ -286,14 +300,39 @@ public class GroupThread extends Thread
 	}
 	
 	//Method to create tokens
-	private UserToken createToken(String username) 
+	private UserToken createToken(String username, String userTokenName, String msg) 
 	{
 		//Check that user exists
-		if(my_gs.userList.checkUser(username))
+		if(my_gs.userList.checkUser(username) && my_gs.userList.checkUser(userTokenName))
 		{
+            byte[] signature = null;
+            boolean check = false;
+            try
+            {
+                KeyPair key = my_gs.userList.getKeyPair(username);
+                Signature privateSignature = Signature.getInstance("SHA256withRSA");
+                privateSignature.initSign(key.getPrivate());
+                privateSignature.update(msg.getBytes());
+                signature = privateSignature.sign();
+            
+            }
+            catch(Exception e)
+            {
+                return null;
+            }
+           
+            
+            check = my_gs.userList.verification(userTokenName, msg, signature);
+            if(check)
+            {
+                UserToken yourToken = new Token(my_gs.name, username, my_gs.userList.getUserGroups(username));
+			    return yourToken;
+            
+            }
+            
+            return null;
 			//Issue a new token with server's name, user's name, and user's groups
-			UserToken yourToken = new Token(my_gs.name, username, my_gs.userList.getUserGroups(username));
-			return yourToken;
+			
 		}
 		else
 		{
@@ -322,7 +361,23 @@ public class GroupThread extends Thread
 				}
 				else
 				{
-					my_gs.userList.addUser(username);
+                    
+                    try
+                    {
+                        KeyPair	key = null;
+                        KeyPairGenerator Gen = null;
+                        Gen = KeyPairGenerator.getInstance("RSA", "BC");
+                        Gen.initialize(2048, new SecureRandom());
+                        key = Gen.generateKeyPair();
+                        my_gs.userList.addUser(username);
+                        my_gs.userList.setKey(username, key); 
+                    }
+                    catch(Exception e)
+                    {
+                        return false;
+                    }
+                    // Create new user and put the key for that user into group server
+                    // where particular user information has been saved
 					return true;
 				}
 			}

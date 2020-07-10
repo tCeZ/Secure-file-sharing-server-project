@@ -13,6 +13,10 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.io.*;
 import java.util.*;
+import java.security.*;
+import org.bouncycastle.jce.provider.BouncyCastleProvider;
+import javax.crypto.*;
+import java.lang.*;
 
 
 public class GroupServer extends Server {
@@ -30,7 +34,7 @@ public class GroupServer extends Server {
 	
 	public void start() {
 		// Overwrote server.start() because if no user file exists, initial admin account needs to be created
-		
+		Security.addProvider(new BouncyCastleProvider());
 		String userFile = "UserList.bin";
 		Scanner console = new Scanner(System.in);
 		ObjectInputStream userStream;
@@ -39,6 +43,7 @@ public class GroupServer extends Server {
 		//This runs a thread that saves the lists on program exit
 		Runtime runtime = Runtime.getRuntime();
 		runtime.addShutdownHook(new ShutDownListener(this));
+        
 		
 		//Open user file to get user list
 		try
@@ -55,10 +60,29 @@ public class GroupServer extends Server {
 			String username = console.next();
 			
 			//Create a new list, add current user to the ADMIN group. They now own the ADMIN group.
-			userList = new UserList();
-			userList.addUser(username);
-			userList.addGroup(username, "ADMIN");
-			userList.addOwnership(username, "ADMIN");
+            // Create key and set Key into userlist.
+            try
+            {
+                KeyPair	key = null;
+                KeyPairGenerator Gen = null;
+                Gen = KeyPairGenerator.getInstance("RSA", "BC");
+                Gen.initialize(2048, new SecureRandom());
+                key = Gen.generateKeyPair();
+                userList = new UserList();
+                userList.addUser(username);
+                userList.addGroup(username, "ADMIN");
+                userList.addOwnership(username, "ADMIN");
+                userList.setKey(username, key);
+            
+                
+            }
+            catch(Exception ex)
+            {
+                System.out.println("Fail to create administrator.");
+			    System.exit(-1);
+                
+            }
+			
 		}
 		catch(IOException e)
 		{

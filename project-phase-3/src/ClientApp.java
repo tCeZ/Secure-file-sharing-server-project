@@ -42,7 +42,10 @@ public class ClientApp
 			g.connect(hostN, 8765);
 			if (g.isConnected())
 			{
-				usrT = g.getToken(userN);
+                String tokenUser = null;
+                System.out.print("Whose token are you trying to request: ");
+                tokenUser = s.nextLine();
+				usrT = g.getToken(userN,tokenUser);
 				if (usrT != null)
 				{
 					tokencheck = true;
@@ -51,7 +54,7 @@ public class ClientApp
 				//did not find a token for that username - uh-roh
 				else 
 				{
-					System.out.println("Username is invalid");
+					System.out.println("Permission denied");
 					g.disconnect();
                     
 				}
@@ -148,7 +151,7 @@ public class ClientApp
 										}
 										else
 										{
-											System.out.println("No files exist!");
+											System.out.println("No files exist");
 										}
 
 										break;
@@ -165,11 +168,11 @@ public class ClientApp
                                         groupShare = s.nextLine();
 										if (f.upload(uploadfile, dest, groupShare, usrT))
 										{
-											System.out.println("Successfully uploaded file!");
+											System.out.println("Successfully uploaded file");
 										}
 										else
 										{
-											System.out.println("Failed to upload! ");
+											System.out.println("Failed to upload");
 										}
 
 										break;
@@ -363,7 +366,7 @@ public class ClientApp
 						}
 						else
 						{
-							System.out.println("Failed to list members - check to make sure you are part of group");
+							System.out.println("Failed to list members - check to make sure you are part of group!");
 						}
 
 						break;
@@ -378,7 +381,7 @@ public class ClientApp
 
 					default: 
 
-						System.out.println("Unidentifiable command. Please enter a valid command");
+						System.out.println("Unidentifiable command. Please enter a valid command!");
 						break;
 				}
 			}		

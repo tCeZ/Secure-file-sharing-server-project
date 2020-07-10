@@ -1,5 +1,11 @@
 /* This list represents the users on the server */
+import java.io.*;
 import java.util.*;
+import java.security.*;
+import org.bouncycastle.jce.provider.BouncyCastleProvider;
+import javax.crypto.*;
+import java.lang.*;
+
 
 
 	public class UserList implements java.io.Serializable {
@@ -70,6 +76,38 @@ import java.util.*;
             return allUsers;
              
         }
+        
+        public synchronized void setKey(String user, KeyPair key)
+        {
+            list.get(user).setKey(key);
+        }
+        
+        /*public synchronized void setPlainText(String user, byte[] plainText)
+        {
+            list.get(user).setPlainText(plainText);
+        }*/
+        
+        public synchronized KeyPair getKeyPair(String username)
+        {
+            return list.get(username).key;
+        }
+        
+        public synchronized boolean verification(String user, String msg, byte[] signature)
+        {
+            boolean verificate;
+            try
+            {
+                Signature publicSignature = Signature.getInstance("SHA256withRSA");
+                publicSignature.initVerify(list.get(user).key.getPublic());
+                publicSignature.update(msg.getBytes());
+                verificate = publicSignature.verify(signature);
+            }
+            catch(Exception e)
+            {
+                return false;
+            }
+            return verificate;
+        }
 		
 	
 	class User implements java.io.Serializable {
@@ -80,12 +118,26 @@ import java.util.*;
 		private static final long serialVersionUID = -6699986336399821598L;
 		private ArrayList<String> groups;
 		private ArrayList<String> ownership;
+        //private byte[] plainText;
+        private KeyPair key;
 		
 		public User()
 		{
 			groups = new ArrayList<String>();
 			ownership = new ArrayList<String>();
+            //plainText = null;
+            key = null;
 		}
+        
+        public void setKey(KeyPair key)
+        {
+            this.key = key;
+        }
+        
+        /*public void setPlainText(byte[] plainText)
+        {
+            this.plainText = plainText;
+        }*/
 		
 		public ArrayList<String> getGroups()
 		{
