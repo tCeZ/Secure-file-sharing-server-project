@@ -1,5 +1,6 @@
 
 import java.util.List;
+import java.util.*;
 import java.io.*;
 
 /**
@@ -47,7 +48,20 @@ public interface UserToken
      * @return The list of group memberships encoded in this token
      *
      */
-    public List<String> getGroups();
+    public ArrayList<String> getGroups();
+    
+    // return signature of this token, which can be used identify the token issuer
+    public byte[] getSignature();
+    
+    // return msg used when creating signature
+    public String getMSG();
+    
+    // add groups that this token holder newly in
+    public void addGroups(String groupname);
+    
+    // delete groups that this token holder quits
+    public void deleteGroups(String groupname);
+    
 
 
 }   //-- end interface UserToken

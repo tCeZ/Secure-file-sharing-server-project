@@ -5,6 +5,42 @@ import java.util.List;
 import java.io.ObjectInputStream;
 
 public class GroupClient extends Client implements GroupClientInterface {
+    public UserList getUserList() // return UserList in group server for token authentication
+    {
+        try
+        { 
+            UserList UL = null;
+            Envelope message = null, response = null;
+            message = new Envelope("GETUL");
+            output.writeObject(message);
+            response = (Envelope)input.readObject();
+
+            //Successful response
+            if(response.getMessage().equals("OK"))
+            {
+                //If there is a token in the Envelope, return it 
+                ArrayList<Object> temp = null;
+                temp = response.getObjContents();
+
+                if(temp.size() == 1)
+                {
+                    UL = (UserList)temp.get(0);
+                    return UL;
+                }
+            }
+
+                return null;
+
+        }
+		
+		catch(Exception e)
+		{
+			System.err.println("Error: " + e.getMessage());
+			e.printStackTrace(System.err);
+			return null;
+		}
+        
+    }
  
 	 public UserToken getToken(String username, String tokenUserName)
 	 {

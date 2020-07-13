@@ -13,6 +13,10 @@ import java.util.ArrayList;
 public class FileThread extends Thread
 {
 	private final Socket socket;
+    
+    
+    
+    
 
 	public FileThread(Socket _socket)
 	{
@@ -36,7 +40,9 @@ public class FileThread extends Thread
 
 				// Handler to list files that this user is allowed to see
 				if(e.getMessage().equals("LFILES"))
-				{
+				{ 
+                    
+                   
 				    if(e.getObjContents().size() < 1)
 					{
 						response = new Envelope("FAIL-BADCONTENTS");
@@ -48,9 +54,13 @@ public class FileThread extends Thread
 						}
 						else
 						{
+                            response = new Envelope("FAIL-BADTOKEN");
 							// extracting the user token
 							UserToken yourToken = (UserToken)e.getObjContents().get(0); 
+                            // extracting userlist for authentication
+                            UserList ul = (UserList)e.getObjContents().get(1);
 							String username = yourToken.getSubject();
+                            boolean checkToken = checkTokenValid(yourToken,ul);
 							String outputStr;
 							List<ShareFile> fullFileList = FileServer.fileList.getFiles();
 							List<String> userFileList = new ArrayList<String>();
@@ -64,9 +74,16 @@ public class FileThread extends Thread
 									}
 								}
 							}
+                            
+                            if(checkToken)
+                            {
+                                response = new Envelope("OK"); //Success
+                                response.addObject(userFileList);
+                            
+                            }
+                           
 
-							response = new Envelope("OK"); //Success
-							response.addObject(userFileList);
+							
 						}
 					}
 					output.writeObject(response);
@@ -89,15 +106,31 @@ public class FileThread extends Thread
 						if(e.getObjContents().get(2) == null) {
 							response = new Envelope("FAIL-BADTOKEN");
 						}
+                        if(e.getObjContents().get(3) == null) {
+							response = new Envelope("FAIL-BADAUTHENTICATION");
+						}
 						else {
 							String remotePath = (String)e.getObjContents().get(0);
 							String group = (String)e.getObjContents().get(1);
 							UserToken yourToken = (UserToken)e.getObjContents().get(2); //Extract token
+                            UserList ul = (UserList)e.getObjContents().get(3);
+                            
+                             boolean checkToken = checkTokenValid(yourToken,ul);
+                            // check whether this token is real
+                            
 
 							if (FileServer.fileList.checkFile(remotePath)) {
 								System.out.printf("Error: file already exists at %s\n", remotePath);
 								response = new Envelope("FAIL-FILEEXISTS"); //Success
 							}
+                            else if(!checkToken)
+                            {
+                                System.out.printf("Check your token!");
+                                response = new Envelope("FAIL_FORGEDTOKEN");
+                                
+
+
+                            }
 							else if (!yourToken.getGroups().contains(group)) {
 								System.out.printf("Error: user missing valid token for group %s\n", group);
 								response = new Envelope("FAIL-UNAUTHORIZED"); //Success
@@ -139,6 +172,17 @@ public class FileThread extends Thread
 
 					String remotePath = (String)e.getObjContents().get(0);
 					Token t = (Token)e.getObjContents().get(1);
+                    UserList ul = (UserList)e.getObjContents().get(2);
+                    boolean checkToken = checkTokenValid(t,ul);
+                    // check whether this token is real
+                    if(!checkToken)
+                    {
+                        System.out.printf("Check your token!");
+                        e = new Envelope("ERROR_TOKEN");
+						output.writeObject(e);
+                        
+                    
+                    }
 					ShareFile sf = FileServer.fileList.getFile("/"+remotePath);
 					if (sf == null) {
 						System.out.printf("Error: File %s doesn't exist\n", remotePath);
@@ -229,7 +273,9 @@ public class FileThread extends Thread
 
 					String remotePath = (String)e.getObjContents().get(0);
 					Token t = (Token)e.getObjContents().get(1);
+                    UserList ul = (UserList) e.getObjContents().get(2);
 					ShareFile sf = FileServer.fileList.getFile("/"+remotePath);
+                    boolean checkToken = checkTokenValid(t,ul);
 					if (sf == null) {
 						System.out.printf("Error: File %s doesn't exist\n", remotePath);
 						e = new Envelope("ERROR_DOESNTEXIST");
@@ -238,6 +284,14 @@ public class FileThread extends Thread
 						System.out.printf("Error user %s doesn't have permission\n", t.getSubject());
 						e = new Envelope("ERROR_PERMISSION");
 					}
+                    else if(!checkToken)
+                    {
+                        System.out.printf("Check your token!");
+                        e = new Envelope("ERROR_TOKEN");
+                        output.writeObject(e);
+
+
+                    }
 					else {
 
 						try
@@ -285,5 +339,41 @@ public class FileThread extends Thread
 			e.printStackTrace(System.err);
 		}
 	}
+    
+    private boolean checkTokenValid(UserToken yourToken, UserList ul)
+    {
+        
+        if(!ul.verification(yourToken.getSubject(),  yourToken.getMSG(), yourToken.getSignature()))  // check signature, whether this token is totally created by user
+        {                                                                                                       // without consideration to modification by user at this step.
+            return false;
+        }
+        
+        UserToken db_Token = ul.getToken(yourToken.getSubject()); // Valid token information saved in group server
+        
+        if(!yourToken.getSubject().equals(db_Token.getSubject()) || !yourToken.getIssuer().equals(db_Token.getIssuer()))
+        {
+            return false;
+        }
+        
+        ArrayList<String> YourGroups = yourToken.getGroups();
+        ArrayList<String> db_Groups = db_Token.getGroups();
+        
+        if(YourGroups.size() != db_Groups.size()) // not same access right to groups
+        {
+            return false;
+        }
+        
+        for(int i=0; i<YourGroups.size(); i++) // token provided by user include access right to different group
+        {
+            if(!db_Groups.contains(YourGroups.get(i)))
+            {
+                return false;
+            }
+        }
+        
+        return true;
+        
+        
+    }
 
 }

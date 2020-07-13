@@ -8,7 +8,8 @@ import java.util.List;
 
 public class FileClient extends Client implements FileClientInterface {
 
-	public boolean delete(String filename, UserToken token) {
+	public boolean delete(String filename, UserToken token, UserList ulInput) {
+        UserList ul = ulInput;
 		String remotePath;
 		if (filename.charAt(0)=='/') {
 			remotePath = filename.substring(1);
@@ -19,6 +20,7 @@ public class FileClient extends Client implements FileClientInterface {
 		Envelope env = new Envelope("DELETEF"); //Success
 	    env.addObject(remotePath);
 	    env.addObject(token);
+        env.addObject(ul);
 	    try {
 			output.writeObject(env);
 		    env = (Envelope)input.readObject();
@@ -39,7 +41,8 @@ public class FileClient extends Client implements FileClientInterface {
 		return true;
 	}
 
-	public boolean download(String sourceFile, String destFile, UserToken token) {
+	public boolean download(String sourceFile, String destFile, UserToken token, UserList ulInput) {
+                UserList ul = ulInput;
 				if (sourceFile.charAt(0)=='/') {
 					sourceFile = sourceFile.substring(1);
 				}
@@ -55,6 +58,7 @@ public class FileClient extends Client implements FileClientInterface {
 					    Envelope env = new Envelope("DOWNLOADF"); //Success
 					    env.addObject(sourceFile);
 					    env.addObject(token);
+                        env.addObject(ul);
 					    output.writeObject(env); 
 					
 					    env = (Envelope)input.readObject();
@@ -101,13 +105,15 @@ public class FileClient extends Client implements FileClientInterface {
 	}
 
 	@SuppressWarnings("unchecked")
-	public List<String> listFiles(UserToken token) {
+	public List<String> listFiles(UserToken token, UserList ulInput) {
+         UserList ul = ulInput;
 		 try
 		 {
 			 Envelope message = null, e = null;
 			 //Tell the server to return the member list
 			 message = new Envelope("LFILES");
 			 message.addObject(token); //Add requester's token
+             message.addObject(ul);
 			 output.writeObject(message); 
 			 
 			 e = (Envelope)input.readObject();
@@ -130,7 +136,9 @@ public class FileClient extends Client implements FileClientInterface {
 	}
 
 	public boolean upload(String sourceFile, String destFile, String group,
-			UserToken token) {
+			UserToken token, UserList ulInput) {
+        
+        UserList ul = ulInput;
 			
 		if (destFile.charAt(0)!='/') {
 			 destFile = "/" + destFile;
@@ -145,6 +153,7 @@ public class FileClient extends Client implements FileClientInterface {
 			 message.addObject(destFile);
 			 message.addObject(group);
 			 message.addObject(token); //Add requester's token
+             message.addObject(ul);
 			 output.writeObject(message);
 			
 			 
@@ -224,6 +233,7 @@ public class FileClient extends Client implements FileClientInterface {
 				}
 		 return true;
 	}
+
 
 }
 

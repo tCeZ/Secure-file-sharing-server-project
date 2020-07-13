@@ -16,7 +16,7 @@ public class ClientApp
 		boolean conn = true; //boolean for multiple logins
 		UserToken usrT = null; // token to verify users
 		String hostN;
-		String userN;
+        String userN;
         String userNN;
 		String groupN = new String();
 		String input;
@@ -26,6 +26,7 @@ public class ClientApp
 		boolean tokencheck = false;
 		List<String> listmems = null;
 		List<String> listfiles = null;
+        String tokenUser = null;
 
 
 		while(conn)
@@ -42,13 +43,14 @@ public class ClientApp
 			g.connect(hostN, 8765);
 			if (g.isConnected())
 			{
-                String tokenUser = null;
+                tokenUser = null;
                 System.out.print("Whose token are you trying to request: ");
                 tokenUser = s.nextLine();
 				usrT = g.getToken(userN,tokenUser);
 				if (usrT != null)
 				{
 					tokencheck = true;
+                    tokenUser = userN;
 					
 				}
 				//did not find a token for that username - uh-roh
@@ -68,6 +70,7 @@ public class ClientApp
 			//connecting to server if token was verified
 			while(tokencheck)
 			{
+                usrT = g.getToken(userN,tokenUser);
 				System.out.print( "Main Menu: \n " +
 									"Enter 1 to connect to File Server \n " + 
 									"Enter 2 to create user \n " +
@@ -141,7 +144,7 @@ public class ClientApp
 								{
 									case 1: 
 
-										listfiles = f.listFiles(usrT);
+										listfiles = f.listFiles(usrT,g.getUserList());
 										if (listfiles != null && listfiles.size() != 0)
 										{
 											for (String fs: listfiles)
@@ -158,7 +161,7 @@ public class ClientApp
 
 									case 2: 
 
-										System.out.print("Path to file for upload: " );
+										System.out.print("Path to file for upload: " ); // format: ./test.txt (if file is in the src folder, otherwise ./../.../name)
 										uploadfile = s.nextLine();
 
 										System.out.print("Name for file to be shown on file server: ");
@@ -166,7 +169,7 @@ public class ClientApp
                                         
                                         System.out.print("Name of the group to share with: ");
                                         groupShare = s.nextLine();
-										if (f.upload(uploadfile, dest, groupShare, usrT))
+										if (f.upload(uploadfile, dest, groupShare, usrT, g.getUserList()))
 										{
 											System.out.println("Successfully uploaded file");
 										}
@@ -185,7 +188,7 @@ public class ClientApp
 										System.out.print("Name of file to shown on local: ");
 										dest = s.nextLine();
 
-										if (f.download(downloadf, dest, usrT))
+										if (f.download(downloadf, dest, usrT, g.getUserList()))
 										{
 											System.out.println("Sucessfully downloaded file");
 										}
@@ -201,7 +204,7 @@ public class ClientApp
 										System.out.print("Filename to be deleted: ");
 										delf = s.nextLine();
 
-										if (f.delete(delf, usrT))
+										if (f.delete(delf, usrT, g.getUserList()))
 										{
 											System.out.println("Sucessfully deleted file");
 										}
@@ -366,7 +369,7 @@ public class ClientApp
 						}
 						else
 						{
-							System.out.println("Failed to list members - check to make sure you are part of group!");
+							System.out.println("Failed to list members - check to make sure you are part of group! - check your Token!");
 						}
 
 						break;

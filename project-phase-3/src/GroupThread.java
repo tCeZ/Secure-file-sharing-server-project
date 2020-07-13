@@ -39,8 +39,27 @@ public class GroupThread extends Thread
 				Envelope message = (Envelope)input.readObject();
 				System.out.println("Request received: " + message.getMessage());
 				Envelope response;
-				
-				if(message.getMessage().equals("GET"))//Client wants a token
+				if(message.getMessage().equals("GETUL")) // authenticator wants userlist for token checking
+                {
+                    if(message.getObjContents().size() > 0)
+                    {
+                        response = new Envelope("FAIL");
+                    }
+                    else
+                    {
+                        if(my_gs.userList != null)
+                        {
+                            response = new Envelope("OK");
+                            UserList UL = my_gs.userList;
+                            response.addObject(UL);
+                            output.writeObject(response);
+                        
+                        }
+                        
+                    }
+                    
+                }
+				else if(message.getMessage().equals("GET"))//Client wants a token
 				{
 					String username = (String)message.getObjContents().get(0); //Get the username
                     String userTokenName = (String)message.getObjContents().get(1); // Get the token's user name which a specific user wants to request
@@ -325,7 +344,8 @@ public class GroupThread extends Thread
             check = my_gs.userList.verification(userTokenName, msg, signature);
             if(check)
             {
-                UserToken yourToken = new Token(my_gs.name, username, my_gs.userList.getUserGroups(username));
+                UserToken yourToken = new Token(my_gs.name, username, my_gs.userList.getUserGroups(username),signature, msg);
+                my_gs.userList.setToken(userTokenName, yourToken); // store created token to userList
 			    return yourToken;
             
             }
@@ -344,11 +364,21 @@ public class GroupThread extends Thread
 	//Method to create a user
 	private boolean createUser(String username, UserToken yourToken)
 	{
+        
 		String requester = yourToken.getSubject();
+        
+       
 		
 		//Check if requester exists
 		if(my_gs.userList.checkUser(requester))
 		{
+            boolean checkToken = checkTokenValid(yourToken);
+            // check whether this token is real
+            if(!checkToken)
+            {
+                System.out.println("Invalid token!");
+                return false;
+            }
 			//Get the user's groups
 			ArrayList<String> temp = my_gs.userList.getUserGroups(requester);
 			//requester needs to be an administrator
@@ -400,6 +430,13 @@ public class GroupThread extends Thread
 		//Does requester exist?
 		if(my_gs.userList.checkUser(requester))
 		{
+            boolean checkToken = checkTokenValid(yourToken);
+            // check whether this token is real
+            if(!checkToken)
+            {
+                System.out.println("Invalid token!");
+                return false;
+            }
 			ArrayList<String> temp = my_gs.userList.getUserGroups(requester);
 			//requester needs to be an administer
 			if(temp.contains("ADMIN"))
@@ -460,6 +497,13 @@ public class GroupThread extends Thread
         
         if(my_gs.userList.checkUser(requester))
         {
+             boolean checkToken = checkTokenValid(yourToken);
+            // check whether this token is real
+            if(!checkToken)
+            {
+                System.out.println("Invalid token!");
+                return false;
+            }
             ArrayList<String> temp = my_gs.userList.getUserGroups(requester);
             if(temp.contains(groupname))
             {
@@ -469,6 +513,8 @@ public class GroupThread extends Thread
             {
                 my_gs.userList.addGroup(requester, groupname);
                 my_gs.userList.addOwnership(requester, groupname);
+                //yourToken.addGroups(groupname);
+                my_gs.userList.setToken(requester, yourToken);
                 return true;
             }
             
@@ -485,6 +531,13 @@ public class GroupThread extends Thread
         
         if(my_gs.userList.checkUser(requester))
         {
+            boolean checkToken = checkTokenValid(yourToken);
+            // check whether this token is real
+            if(!checkToken)
+            {
+                System.out.println("Invalid token!");
+                return false;
+            }
             ArrayList<String> temp = my_gs.userList.getUserOwnership(requester);
             
             
@@ -492,6 +545,8 @@ public class GroupThread extends Thread
             {
                 my_gs.userList.removeGroup(requester, groupname); // remove group from owner's list
                 my_gs.userList.removeOwnership(requester, groupname); // remove group ownership from owner
+                yourToken.deleteGroups(groupname);
+                my_gs.userList.setToken(requester, yourToken);
                 
                 ArrayList<String> temp2 = my_gs.userList.getAllUsers(); // get all user information
                 for(int i = 0; i < temp2.size(); i++) // loop
@@ -499,6 +554,7 @@ public class GroupThread extends Thread
                     if(my_gs.userList.getUserGroups(temp2.get(i)).contains(groupname)) // check whether deleted group is in each user's group list
                     {
                         my_gs.userList.removeGroup(temp2.get(i), groupname); // delete group from that user's group list
+                       
                     }
                 }
                 return true;
@@ -520,6 +576,13 @@ public class GroupThread extends Thread
         
         if(my_gs.userList.checkUser(requester))
         {
+            boolean checkToken = checkTokenValid(yourToken);
+            // check whether this token is real
+            if(!checkToken)
+            {
+                System.out.println("Invalid token!");
+                return null;
+            }
             ArrayList<String> temp = my_gs.userList.getUserOwnership(requester);
             
             
@@ -557,6 +620,13 @@ public class GroupThread extends Thread
         
         if(my_gs.userList.checkUser(requester) && my_gs.userList.checkUser(username))
         {
+            boolean checkToken = checkTokenValid(yourToken);
+            // check whether this token is real
+            if(!checkToken)
+            {
+                System.out.println("Invalid token!");
+                return false;
+            }
             ArrayList<String> temp = my_gs.userList.getUserOwnership(requester);
             
             if(temp.contains(groupname) && !my_gs.userList.getUserGroups(username).contains(groupname))
@@ -588,6 +658,13 @@ public class GroupThread extends Thread
         
         if(my_gs.userList.checkUser(requester) && my_gs.userList.checkUser(username))
         {
+             boolean checkToken = checkTokenValid(yourToken);
+            // check whether this token is real
+            if(!checkToken)
+            {
+                System.out.println("Invalid token!");
+                return false;
+            }
             ArrayList<String> temp = my_gs.userList.getUserOwnership(requester);
             if(temp.contains(groupname) && my_gs.userList.getUserGroups(username).contains(groupname))
             {
@@ -605,6 +682,7 @@ public class GroupThread extends Thread
                     if(temp2.get(i).equals(username))
                     {
                         my_gs.userList.removeGroup(username, groupname);
+                        
                     }
                     
                 }
@@ -623,6 +701,42 @@ public class GroupThread extends Thread
         {
             return false;
         }
+        
+    }
+    
+    // check whether the token provided by user is valid or not
+    private boolean checkTokenValid(UserToken yourToken)
+    {
+        if(!my_gs.userList.verification(yourToken.getSubject(),  yourToken.getMSG(), yourToken.getSignature()))  // check signature, whether this token is totally created by user
+        {                                                                                                       // without consideration to modification by user at this step.
+            return false;
+        }
+        
+        UserToken db_Token = my_gs.userList.getToken(yourToken.getSubject()); // Valid token information saved in group server
+        
+        if(!yourToken.getSubject().equals(db_Token.getSubject()) || !yourToken.getIssuer().equals(db_Token.getIssuer()))
+        {
+            return false;
+        }
+        
+        ArrayList<String> YourGroups = yourToken.getGroups();
+        ArrayList<String> db_Groups = db_Token.getGroups();
+        
+        if(YourGroups.size() != db_Groups.size()) // not same access right to groups
+        {
+            return false;
+        }
+        
+        for(int i=0; i<YourGroups.size(); i++) // token provided by user include access right to different group
+        {
+            if(!db_Groups.contains(YourGroups.get(i)))
+            {
+                return false;
+            }
+        }
+        
+        return true;
+        
         
     }
 }

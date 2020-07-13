@@ -26,6 +26,7 @@ public class GroupServer extends Server {
     
 	public GroupServer() {
 		super(SERVER_PORT, "ALPHA");
+        
 	}
 	
 	public GroupServer(int _port) {

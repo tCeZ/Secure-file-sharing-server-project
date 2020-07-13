@@ -82,11 +82,6 @@ import java.lang.*;
             list.get(user).setKey(key);
         }
         
-        /*public synchronized void setPlainText(String user, byte[] plainText)
-        {
-            list.get(user).setPlainText(plainText);
-        }*/
-        
         public synchronized KeyPair getKeyPair(String username)
         {
             return list.get(username).key;
@@ -108,6 +103,17 @@ import java.lang.*;
             }
             return verificate;
         }
+        
+        public synchronized void setToken(String user, UserToken token)
+        {
+            list.get(user).setToken(token);
+        }
+        
+        public synchronized UserToken getToken(String user)
+        {
+            return list.get(user).token;
+        }
+        
 		
 	
 	class User implements java.io.Serializable {
@@ -120,6 +126,7 @@ import java.lang.*;
 		private ArrayList<String> ownership;
         //private byte[] plainText;
         private KeyPair key;
+        private UserToken token;
 		
 		public User()
 		{
@@ -180,6 +187,11 @@ import java.lang.*;
 				}
 			}
 		}
+        
+        public void setToken(UserToken token)
+        {
+            this.token = token;
+        }
 		
 	}
 	
