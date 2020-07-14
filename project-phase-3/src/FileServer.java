@@ -9,12 +9,26 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.security.*;
+import java.crypto.*;
+
+import org.bouncycastle.jce.provider.BouncyCastleProvider;
 
 public class FileServer extends Server {
 	
 	public static final int SERVER_PORT = 4321;
 	public static FileList fileList;
+  public static int gsPort;
+  public static String gsAddress;
+  public static PublicKey gsPublicKey;
+  private KeyPair keys = null;
 	
+  public FileServer(int _port, String _gsAddress, int _gsPort) {
+    super(_port, "FilePile");
+    gsAddress = _gsAddress;
+    gsPort = _gsPort;
+  }
+
 	public FileServer() {
 		super(SERVER_PORT, "FilePile");
 	}
@@ -26,6 +40,9 @@ public class FileServer extends Server {
 	public void start() {
 		String fileFile = "FileList.bin";
 		ObjectInputStream fileStream;
+    String keyFile = "FS" + port + "KeyList.bin";
+    Security.addProvider(new BouncyCastleProvider());
+    final int RSAKEYSIZE = 2048;
 		
 		//This runs a thread that saves the lists on program exit
 		Runtime runtime = Runtime.getRuntime();
@@ -68,11 +85,77 @@ public class FileServer extends Server {
 			 System.out.println("Error creating shared_files directory");				 
 		 }
 		
+// Open or create file with RSA key pairs
+		try {
+			FileInputStream fis = new FileInputStream(keyFile);
+			fileStream = new ObjectInputStream(fis);
+			keys = (KeyPair)fileStream.readObject();
+			fileStream.close();
+			fis.close();
+			System.out.println("Loaded keys.");
+		}
+		catch (FileNotFoundException e) {
+			System.out.println(keyFile + " File Does Not Exist. Creating " + keyFile + "...");
+			// create the keys
+			try {
+				KeyPairGenerator keyGenRSA = KeyPairGenerator.getInstance("RSA", "BC");
+				SecureRandom keyGenRandom = new SecureRandom();
+				byte bytes[] = new byte[20];
+				keyGenRandom.nextBytes(bytes);
+				keyGenRSA.initialize(RSAKEYSIZE, keyGenRandom);
+				keys = keyGenRSA.generateKeyPair();
+				System.out.println("Created keys.");
+			}
+			catch (Exception ee) {
+				System.err.println("Error generating RSA keys.");
+				ee.printStackTrace(System.err);
+				System.exit(-1);
+			}
+			// save the keys
+			System.out.println("Saving " + keyFile + "...");
+			ObjectOutputStream keyOut;
+			try {
+				keyOut = new ObjectOutputStream(new FileOutputStream(keyFile));
+				keyOut.writeObject(keys);
+				keyOut.close();
+			}
+			catch(Exception ee) {
+				System.err.println("Error writing to " + keyFile + ".");
+				ee.printStackTrace(System.err);
+				System.exit(-1);
+			}
+		}
+		catch (IOException e) {
+			System.out.println("Error reading from " + keyFile + " file");
+			System.exit(-1);
+		}
+		catch (ClassNotFoundException e) {
+			System.out.println("Error reading from " + keyFile + " file");
+			System.exit(-1);
+		}
+
+		// Call Group Server and get its Public Key
+		GroupClient gc = new GroupClient();
+		gc.connect(gsAddress, gsPort);
+		if (gc.isConnected()) // check that server is running
+		{
+			gsPublicKey = gc.getPubKey();
+			if (gsPublicKey == null) { // no key retrieved
+				System.out.println("Error: Group Server key not retrieved.");
+				gc.disconnect();
+				System.exit(-1);
+			}
+			System.out.println("Group Server Public Key retrieved.");
+			gc.disconnect();
+		}
+		else {
+			System.out.println("Error - Group Server not reached at given address.");
+		}
+		
 		//Autosave Daemon. Saves lists every 5 minutes
 		AutoSaveFS aSave = new AutoSaveFS();
 		aSave.setDaemon(true);
 		aSave.start();
-		
 		
 		boolean running = true;
 		
@@ -87,7 +170,7 @@ public class FileServer extends Server {
 			while(running)
 			{
 				sock = serverSock.accept();
-				thread = new FileThread(sock);
+				thread = new FileThread(sock, this, keys.getPrivate(), gsPublicKey);
 				thread.start();
 			}
 			
@@ -99,7 +182,12 @@ public class FileServer extends Server {
 			e.printStackTrace(System.err);
 		}
 	}
+	
+	public PublicKey getServerPublicKey() {
+		return keys.getPublic();
+	}
 }
+
 
 //This thread saves user and group lists
 class ShutDownListenerFS implements Runnable

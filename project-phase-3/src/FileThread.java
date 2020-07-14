@@ -9,11 +9,18 @@ import java.io.FileOutputStream;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.util.ArrayList;
+import java.security.*;
+import javax.crypto.*;
+import javax.crypto.spec.IvParameterSpec;
+import org.bouncycastle.jce.provider.BouncyCastleProvider;
 
 public class FileThread extends Thread
 {
 	private final Socket socket;
-    
+	private FileServer my_fs;
+	private final PrivateKey fsPrivKey;
+	private final PublicKey gsKey;
+	private Key sessionKey;
     
     
     
@@ -21,11 +28,16 @@ public class FileThread extends Thread
 	public FileThread(Socket _socket)
 	{
 		socket = _socket;
+    my_fs = _fs;
+		fsPrivKey = _fsPrivKey;
+		gsKey = _gsKey;
 	}
 
 	public void run()
 	{
 		boolean proceed = true;
+    Security.addProvider(new BouncyCastleProvider());
+
 		try
 		{
 			System.out.println("*** New connection from " + socket.getInetAddress() + ":" + socket.getPort() + "***");
