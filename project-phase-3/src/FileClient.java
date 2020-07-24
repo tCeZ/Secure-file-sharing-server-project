@@ -5,6 +5,13 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.List;
+import org.bouncycastle.jce.provider.BouncyCastleProvider;
+import java.security.*;
+import javax.crypto.*;
+import javax.crypto.spec.IvParameterSpec;
+import org.bouncycastle.jce.provider.BouncyCastleProvider;
+import java.math.BigInteger;
+import java.util.Arrays;
 
 public class FileClient extends Client implements FileClientInterface {
 	//shared session key b/w all classes

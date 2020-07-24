@@ -10,14 +10,13 @@ import java.io.ObjectOutputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.security.*;
-import java.crypto.*;
-
+//import javax.crypto.*;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 
 public class FileServer extends Server {
 	
-	public static final int SERVER_PORT = 4321;
-	public static FileList fileList;
+  public static final int SERVER_PORT = 4321;
+  public static FileList fileList;
   public static int gsPort;
   public static String gsAddress;
   public static PublicKey gsPublicKey;
@@ -40,9 +39,9 @@ public class FileServer extends Server {
 	public void start() {
 		String fileFile = "FileList.bin";
 		ObjectInputStream fileStream;
-    String keyFile = "FS" + port + "KeyList.bin";
-    Security.addProvider(new BouncyCastleProvider());
-    final int RSAKEYSIZE = 2048;
+    	String keyFile = "FS" + port + "KeyList.bin";
+    	Security.addProvider(new BouncyCastleProvider());
+    	final int RSAKEYSIZE = 2048;
 		
 		//This runs a thread that saves the lists on program exit
 		Runtime runtime = Runtime.getRuntime();
@@ -85,7 +84,7 @@ public class FileServer extends Server {
 			 System.out.println("Error creating shared_files directory");				 
 		 }
 		
-// Open or create file with RSA key pairs
+		// Open or create file with RSA key pairs
 		try {
 			FileInputStream fis = new FileInputStream(keyFile);
 			fileStream = new ObjectInputStream(fis);

@@ -9,17 +9,23 @@ import java.security.*;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import javax.crypto.*;
 import java.lang.*;
+import javax.crypto.spec.SecretKeySpec;
+import javax.crypto.spec.IvParameterSpec;
 
 public class GroupThread extends Thread 
 {
 	private final Socket socket;
 	private GroupServer my_gs;
+	private Key sessionKey;
+	private PrivateKey privateKey;
     
 	
-	public GroupThread(Socket _socket, GroupServer _gs)
+	public GroupThread(Socket _socket, GroupServer _gs, PrivateKey _pk)
 	{
 		socket = _socket;
 		my_gs = _gs;
+		privateKey = _pk;
+
 	}
 	
 	public void run()

@@ -39,6 +39,19 @@ import java.lang.*;
 				return false;
 			}
 		}
+
+		public synchronized void setUserHash(String username, byte[] passHash) {
+			list.get(username).setHash(passHash);
+		}
+		
+		public synchronized byte[] getUserHash(String username) {
+			return list.get(username).getHash();
+		}
+		
+		public synchronized Enumeration<String> getUsernames()
+		{
+			return list.keys();
+		}
 		
 		public synchronized ArrayList<String> getUserGroups(String username)
 		{
@@ -127,6 +140,7 @@ import java.lang.*;
         //private byte[] plainText;
         private KeyPair key;
         private UserToken token;
+        private byte pwHash[];
 		
 		public User()
 		{
@@ -140,6 +154,14 @@ import java.lang.*;
         {
             this.key = key;
         }
+
+        public void setHash(byte newHash[]) {
+			pwHash = newHash;
+		}
+		
+		public byte[] getHash() {
+			return pwHash;
+		}
         
         /*public void setPlainText(byte[] plainText)
         {

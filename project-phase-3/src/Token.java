@@ -68,6 +68,19 @@ public class Token implements UserToken, Serializable
     {
         return this.signature;
     }
+
+    public void setSignature(byte[] sig) {
+        signature = sig;
+    }
+
+    public String getContents() {
+        StringBuilder contents = new StringBuilder(Issuer);
+        contents.append(Subject);
+        for (int i = 0; i < Groups.size(); i++) {
+            contents.append(Groups.get(i));
+        }
+        return contents.toString();
+    }
     
     public String getMSG()
     {
