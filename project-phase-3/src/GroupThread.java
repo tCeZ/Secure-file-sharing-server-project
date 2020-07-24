@@ -45,265 +45,350 @@ public class GroupThread extends Thread
 				Envelope message = (Envelope)input.readObject();
 				System.out.println("Request received: " + message.getMessage());
 				Envelope response;
-				if(message.getMessage().equals("GETUL")) // authenticator wants userlist for token checking
-                {
-                    if(message.getObjContents().size() > 0)
-                    {
-                        response = new Envelope("FAIL");
-                    }
-                    else
-                    {
-                        if(my_gs.userList != null)
-                        {
-                            response = new Envelope("OK");
-                            UserList UL = my_gs.userList;
-                            response.addObject(UL);
-                            output.writeObject(response);
-                        
-                        }
-                        
-                    }
-                    
-                }
-				else if(message.getMessage().equals("GET"))//Client wants a token
-				{
-					String username = (String)message.getObjContents().get(0); //Get the username
-                    String userTokenName = (String)message.getObjContents().get(1); // Get the token's user name which a specific user wants to request
-					if(username == null)
-					{
-						response = new Envelope("FAIL");
-						response.addObject(null);
-						output.writeObject(response);
-					}
-                    else if(userTokenName == null)
-                    {
-                        response = new Envelope("FAIL");
-						response.addObject(null);
-						output.writeObject(response);
-                    }
-					else
-					{
-						UserToken yourToken = createToken(username, userTokenName, message.getMessage()); //Create a token
-                        if(yourToken == null)
-                        {
-                            response = new Envelope("FAIL");
-                            response.addObject(null);
-                            output.writeObject(response);
-                        
-                        }
-						
-						//Respond to the client. On error, the client will receive a null token
-						response = new Envelope("OK");
-						response.addObject(yourToken);
-						output.writeObject(response);
-					}
+
+				// parse through publicly accessible messages
+				if (message.getMessage().equals("GETPUBKEY")) { // Client wants the public key
+					response = new Envelope("OK");
+					response.addObject(my_gs.getServerPublicKey());
+					output.writeObject(response);
 				}
-				else if(message.getMessage().equals("CUSER")) //Client wants to create a user
-				{
-					if(message.getObjContents().size() < 2)
+				else if (message.getMessage().equals("KCG")) { // Client wants a session key
+					// Decrypt sealed object with private key
+					SealedObject sealedObject = (SealedObject)message.getObjContents().get(0);
+					String algo = sealedObject.getAlgorithm();
+					Cipher cipher = Cipher.getInstance(algo);
+					cipher.init(Cipher.DECRYPT_MODE, privateKey);
+					// Get KeyPack challenge/key combo from sealedObject
+					KeyPack kcg = (KeyPack)sealedObject.getObject(cipher);
+					int challenge = kcg.getChallenge();
+					sessionKey = kcg.getSecretKey();
+					// Get IV from message
+					byte IVarray[] = (byte[])message.getObjContents().get(1);
+					
+					// Encryption of challenge response
+					Cipher theCipher = Cipher.getInstance("AES/CBC/PKCS5Padding", "BC");
+					challenge += 1;
+					byte plaintext[] = new byte[4];
+					plaintext[0] = (byte)(challenge >> 24);
+					plaintext[1] = (byte)(challenge >> 16);
+					plaintext[2] = (byte)(challenge >> 8);
+					plaintext[3] = (byte)(challenge /*>> 0*/);
+					theCipher.init(Cipher.ENCRYPT_MODE, sessionKey, new IvParameterSpec(IVarray));
+					byte[] cipherText = theCipher.doFinal(plaintext);
+
+					// Respond to the client
+					response = new Envelope("OK");
+					response.addObject(cipherText);
+					output.writeObject(response);
+				}
+				else if (message.getMessage().equals("ENV")) { // encrypted Envelope
+					// decrypt contents of encrypted Envelope and pass to branches below
+					message = decryptEnv(message);
+					System.out.println("ENV: " + message.getMessage());
+					
+					if (message.getMessage().equals("GET")) // Client wants a token
 					{
-						response = new Envelope("FAIL");
-					}
-					else
-					{
-						response = new Envelope("FAIL");
+						String username = (String)message.getObjContents().get(0); // Get the username
+						String password = (String)message.getObjContents().get(1);
 						
-						if(message.getObjContents().get(0) != null)
-						{
-							if(message.getObjContents().get(1) != null)
-							{
-								String username = (String)message.getObjContents().get(0); //Extract the username
-								UserToken yourToken = (UserToken)message.getObjContents().get(1); //Extract the token
+						if (username == null) {
+							response = new Envelope("FAIL");
+							response.addObject(null);
+							output.writeObject(encryptEnv(response));
+						}
+						else {
+							UserToken yourToken = createToken(username, password, message.getMessage()); // Create a token
+							// Respond to the client. On error, the client will receive a null token
+							response = new Envelope("OK");
+							response.addObject(yourToken);
+							output.writeObject(encryptEnv(response));
+						}
+					}
+					else if (message.getMessage().equals("CUSER")) //Client wants to create a user
+					{
+						if (message.getObjContents().size() < 3) {
+							response = new Envelope("FAIL");
+						}
+						else {
+							response = new Envelope("FAIL");
+							
+							if (message.getObjContents().get(0) != null &&
+								message.getObjContents().get(1) != null &&
+								message.getObjContents().get(2) != null) {
 								
-								if(createUser(username, yourToken))
-								{
-									response = new Envelope("OK"); //Success
+								String username = (String)message.getObjContents().get(0); // Extract the username
+								char[] password = (char[])message.getObjContents().get(1); // Extract the password
+								Token yourToken = (Token)message.getObjContents().get(2); // Extract the token
+								
+								// Check token's authenticity
+								if (checkTokenValid(yourToken)) {
+									if (createUser(username, yourToken)) {
+										response = new Envelope("OK"); // Success
+									}
 								}
 							}
 						}
-					}
-					
-					output.writeObject(response);
-				}
-				else if(message.getMessage().equals("DUSER")) //Client wants to delete a user
-				{
-					
-					if(message.getObjContents().size() < 2)
+						output.writeObject(encryptEnv(response));
+					}				
+					if(message.getMessage().equals("GETUL")) // authenticator wants userlist for token checking
+	                {
+	                    if(message.getObjContents().size() > 0)
+	                    {
+	                        response = new Envelope("FAIL");
+	                    }
+	                    else
+	                    {
+	                        if(my_gs.userList != null)
+	                        {
+	                            response = new Envelope("OK");
+	                            UserList UL = my_gs.userList;
+	                            response.addObject(UL);
+	                            output.writeObject(response);
+	                        
+	                        }
+	                        
+	                    }
+	                    
+	                }
+					else if(message.getMessage().equals("GET"))//Client wants a token
 					{
-						response = new Envelope("FAIL");
-					}
-					else
-					{
-						response = new Envelope("FAIL");
-						
-						if(message.getObjContents().get(0) != null)
+						String username = (String)message.getObjContents().get(0); //Get the username
+	                    String userTokenName = (String)message.getObjContents().get(1); // Get the token's user name which a specific user wants to request
+						if(username == null)
 						{
-							if(message.getObjContents().get(1) != null)
+							response = new Envelope("FAIL");
+							response.addObject(null);
+							output.writeObject(response);
+						}
+	                    else if(userTokenName == null)
+	                    {
+	                        response = new Envelope("FAIL");
+							response.addObject(null);
+							output.writeObject(response);
+	                    }
+						else
+						{
+							UserToken yourToken = createToken(username, userTokenName, message.getMessage()); //Create a token
+	                        if(yourToken == null)
+	                        {
+	                            response = new Envelope("FAIL");
+	                            response.addObject(null);
+	                            output.writeObject(response);
+	                        
+	                        }
+							
+							//Respond to the client. On error, the client will receive a null token
+							response = new Envelope("OK");
+							response.addObject(yourToken);
+							output.writeObject(response);
+						}
+					}
+					else if(message.getMessage().equals("CUSER")) //Client wants to create a user
+					{
+						if(message.getObjContents().size() < 2)
+						{
+							response = new Envelope("FAIL");
+						}
+						else
+						{
+							response = new Envelope("FAIL");
+							
+							if(message.getObjContents().get(0) != null)
 							{
-								String username = (String)message.getObjContents().get(0); //Extract the username
-								UserToken yourToken = (UserToken)message.getObjContents().get(1); //Extract the token
-								
-								if(deleteUser(username, yourToken))
+								if(message.getObjContents().get(1) != null)
 								{
-									response = new Envelope("OK"); //Success
+									String username = (String)message.getObjContents().get(0); //Extract the username
+									UserToken yourToken = (UserToken)message.getObjContents().get(1); //Extract the token
+									
+									if(createUser(username, yourToken))
+									{
+										response = new Envelope("OK"); //Success
+									}
 								}
 							}
 						}
+						
+						output.writeObject(response);
 					}
-					
-					output.writeObject(response);
-				}
-				else if(message.getMessage().equals("CGROUP")) //Client wants to create a group
-				{
-                    if(message.getObjContents().size() < 2)
-                    {
-                        response = new Envelope("FAIL");
-                        
-                    }
-                    else
-                    {
-                        response = new Envelope("FAIL");
-                        
-                        if(message.getObjContents().get(0) != null)
-                        {
-                            if(message.getObjContents().get(1) != null)
-                            {
-                               String groupname = (String)message.getObjContents().get(0); //Extract the groupname
-                               UserToken yourToken = (UserToken)message.getObjContents().get(1); //Extract the token
-                               
-                               if(createGroup(groupname, yourToken))
-                               {
-                                   response = new Envelope("OK");
-                               }
-                            }
-                            
-                            
-                        }
-                    }
-                    output.writeObject(response);
-				    /* TODO:  Write this handler */
-				}
-				else if(message.getMessage().equals("DGROUP")) //Client wants to delete a group
-				{
-                    if(message.getObjContents().size() < 2)
-                    {
-                        response = new Envelope("FAIL");
-                    }
-                    else
-                    {
-                        response = new Envelope("FAIL");
-                        
-                        if(message.getObjContents().get(0) != null)
-                        {
-                            if(message.getObjContents().get(1) != null)
-                            {
-                                String groupname = (String)message.getObjContents().get(0); //Extract the groupname
-								UserToken yourToken = (UserToken)message.getObjContents().get(1); //Extract the token
-                                
-                                if(deleteGroup(groupname, yourToken))
-                                {
-                                    response = new Envelope("OK");
-                                }
-                            }
-                        }
-                    }
-                    output.writeObject(response);
-				    /* TODO:  Write this handler */
-				}
-				else if(message.getMessage().equals("LMEMBERS")) //Client wants a list of members in a group
-				{
-                    if(message.getObjContents().size() < 2)
+					else if(message.getMessage().equals("DUSER")) //Client wants to delete a user
 					{
-						response = new Envelope("FAIL");
+						
+						if(message.getObjContents().size() < 2)
+						{
+							response = new Envelope("FAIL");
+						}
+						else
+						{
+							response = new Envelope("FAIL");
+							
+							if(message.getObjContents().get(0) != null)
+							{
+								if(message.getObjContents().get(1) != null)
+								{
+									String username = (String)message.getObjContents().get(0); //Extract the username
+									UserToken yourToken = (UserToken)message.getObjContents().get(1); //Extract the token
+									
+									if(deleteUser(username, yourToken))
+									{
+										response = new Envelope("OK"); //Success
+									}
+								}
+							}
+						}
+						
+						output.writeObject(response);
 					}
-                    else
-                    {
-                        response = new Envelope("FAIL");
-                        
-                        if(message.getObjContents().get(0) != null)
-                        {
-                            if(message.getObjContents().get(1) != null)
-                            {
-                                String groupname = (String)message.getObjContents().get(0); //Extract the groupname
-								UserToken yourToken = (UserToken)message.getObjContents().get(1); //Extract the token
-                                ArrayList<String> memberList = new ArrayList<String>();
-                                memberList = listMembers(groupname, yourToken);
-                                
-                                if(memberList != null)
-                                {
-                                    response = new Envelope("OK");
-                                    response.addObject(memberList);
-                                }
-                            }
-                        }
-                    }
-                    output.writeObject(response);
-				    /* TODO:  Write this handler */
-				}
-				else if(message.getMessage().equals("AUSERTOGROUP")) //Client wants to add user to a group
-				{
-                    if(message.getObjContents().size() < 3)
+					else if(message.getMessage().equals("CGROUP")) //Client wants to create a group
 					{
-						response = new Envelope("FAIL");
+	                    if(message.getObjContents().size() < 2)
+	                    {
+	                        response = new Envelope("FAIL");
+	                        
+	                    }
+	                    else
+	                    {
+	                        response = new Envelope("FAIL");
+	                        
+	                        if(message.getObjContents().get(0) != null)
+	                        {
+	                            if(message.getObjContents().get(1) != null)
+	                            {
+	                               String groupname = (String)message.getObjContents().get(0); //Extract the groupname
+	                               UserToken yourToken = (UserToken)message.getObjContents().get(1); //Extract the token
+	                               
+	                               if(createGroup(groupname, yourToken))
+	                               {
+	                                   response = new Envelope("OK");
+	                               }
+	                            }
+	                            
+	                            
+	                        }
+	                    }
+	                    output.writeObject(response);
+					    /* TODO:  Write this handler */
 					}
-                    else
-                    {
-                        response = new Envelope("FAIL");
-                        
-                        if(message.getObjContents().get(0) != null)
-                        {
-                            if(message.getObjContents().get(1) != null)
-                            {
-                                if(message.getObjContents().get(2) != null)
-                                {
-                                    String username = (String)message.getObjContents().get(0); //Extract the username
-                                    String groupname = (String)message.getObjContents().get(1); //Extract the groupname
-								    UserToken yourToken = (UserToken)message.getObjContents().get(2); //Extract the token
-                                    
-                                    if(addUserToGroup(username, groupname, yourToken))
-                                    {
-                                        response = new Envelope("OK");
-                                    }
-                                }
-                            }
-                        }
-                        
-                        
-                    }
-                    output.writeObject(response);
-				    /* TODO:  Write this handler */
-				}
-				else if(message.getMessage().equals("RUSERFROMGROUP")) //Client wants to remove user from a group
-				{
-                    if(message.getObjContents().size() < 3)
+					else if(message.getMessage().equals("DGROUP")) //Client wants to delete a group
 					{
-						response = new Envelope("FAIL");
+	                    if(message.getObjContents().size() < 2)
+	                    {
+	                        response = new Envelope("FAIL");
+	                    }
+	                    else
+	                    {
+	                        response = new Envelope("FAIL");
+	                        
+	                        if(message.getObjContents().get(0) != null)
+	                        {
+	                            if(message.getObjContents().get(1) != null)
+	                            {
+	                                String groupname = (String)message.getObjContents().get(0); //Extract the groupname
+									UserToken yourToken = (UserToken)message.getObjContents().get(1); //Extract the token
+	                                
+	                                if(deleteGroup(groupname, yourToken))
+	                                {
+	                                    response = new Envelope("OK");
+	                                }
+	                            }
+	                        }
+	                    }
+	                    output.writeObject(response);
+					    /* TODO:  Write this handler */
 					}
-                    else
-                    {
-                        response = new Envelope("FAIL");
-                        if(message.getObjContents().get(0) != null)
-                        {
-                            if(message.getObjContents().get(1) != null)
-                            {
-                                if(message.getObjContents().get(2) != null)
-                                {
-                                    String username = (String)message.getObjContents().get(0); //Extract the username
-                                    String groupname = (String)message.getObjContents().get(1); //Extract the groupname
-								    UserToken yourToken = (UserToken)message.getObjContents().get(2); //Extract the token
-                                    
-                                    if(deleteUserFromGroup(username, groupname, yourToken))
-                                    {
-                                        response = new Envelope("OK");
-                                    }
-                                }
-                            }
-                        }
+					else if(message.getMessage().equals("LMEMBERS")) //Client wants a list of members in a group
+					{
+	                    if(message.getObjContents().size() < 2)
+						{
+							response = new Envelope("FAIL");
+						}
+	                    else
+	                    {
+	                        response = new Envelope("FAIL");
+	                        
+	                        if(message.getObjContents().get(0) != null)
+	                        {
+	                            if(message.getObjContents().get(1) != null)
+	                            {
+	                                String groupname = (String)message.getObjContents().get(0); //Extract the groupname
+									UserToken yourToken = (UserToken)message.getObjContents().get(1); //Extract the token
+	                                ArrayList<String> memberList = new ArrayList<String>();
+	                                memberList = listMembers(groupname, yourToken);
+	                                
+	                                if(memberList != null)
+	                                {
+	                                    response = new Envelope("OK");
+	                                    response.addObject(memberList);
+	                                }
+	                            }
+	                        }
+	                    }
+	                    output.writeObject(response);
+					    /* TODO:  Write this handler */
+					}
+					else if(message.getMessage().equals("AUSERTOGROUP")) //Client wants to add user to a group
+					{
+	                    if(message.getObjContents().size() < 3)
+						{
+							response = new Envelope("FAIL");
+						}
+	                    else
+	                    {
+	                        response = new Envelope("FAIL");
+	                        
+	                        if(message.getObjContents().get(0) != null)
+	                        {
+	                            if(message.getObjContents().get(1) != null)
+	                            {
+	                                if(message.getObjContents().get(2) != null)
+	                                {
+	                                    String username = (String)message.getObjContents().get(0); //Extract the username
+	                                    String groupname = (String)message.getObjContents().get(1); //Extract the groupname
+									    UserToken yourToken = (UserToken)message.getObjContents().get(2); //Extract the token
+	                                    
+	                                    if(addUserToGroup(username, groupname, yourToken))
+	                                    {
+	                                        response = new Envelope("OK");
+	                                    }
+	                                }
+	                            }
+	                        }
+	                        
+	                        
+	                    }
+	                    output.writeObject(response);
+					    /* TODO:  Write this handler */
+					}
+					else if(message.getMessage().equals("RUSERFROMGROUP")) //Client wants to remove user from a group
+					{
+	                    if(message.getObjContents().size() < 3)
+						{
+							response = new Envelope("FAIL");
+						}
+	                    else
+	                    {
+	                        response = new Envelope("FAIL");
+	                        if(message.getObjContents().get(0) != null)
+	                        {
+	                            if(message.getObjContents().get(1) != null)
+	                            {
+	                                if(message.getObjContents().get(2) != null)
+	                                {
+	                                    String username = (String)message.getObjContents().get(0); //Extract the username
+	                                    String groupname = (String)message.getObjContents().get(1); //Extract the groupname
+									    UserToken yourToken = (UserToken)message.getObjContents().get(2); //Extract the token
+	                                    
+	                                    if(deleteUserFromGroup(username, groupname, yourToken))
+	                                    {
+	                                        response = new Envelope("OK");
+	                                    }
+	                                }
+	                            }
+	                        }
+	                    }
+	                    output.writeObject(encryptEnv(response));
                     }
-                    output.writeObject("OK");
                     
-                    
-				    /* TODO:  Write this handler */
+				    
 				}
 				else if(message.getMessage().equals("DISCONNECT")) //Client wants to disconnect
 				{
@@ -315,6 +400,7 @@ public class GroupThread extends Thread
 					response = new Envelope("FAIL"); //Server does not understand client request
 					output.writeObject(response);
 				}
+
 			}while(proceed);	
 		}
 		catch(Exception e)
@@ -745,4 +831,41 @@ public class GroupThread extends Thread
         
         
     }
+
+    private Envelope decryptEnv(Envelope msg) {
+		// Remove objects of envelope
+		SealedObject so = (SealedObject)msg.getObjContents().get(0);
+		byte[] IVarray = (byte[])msg.getObjContents().get(1);
+		try {
+			String algo = so.getAlgorithm();
+			Cipher envCipher = Cipher.getInstance(algo);
+			envCipher.init(Cipher.DECRYPT_MODE, sessionKey, new IvParameterSpec(IVarray));
+			return (Envelope)so.getObject(envCipher); // return decrypted envelope
+		}
+		catch (Exception e) {
+			System.out.println("Error: " + e);
+			e.printStackTrace();
+		}
+		return null;
+	}
+	
+	private Envelope encryptEnv(Envelope msg) {
+		try {
+			Cipher cipher = Cipher.getInstance("AES/CBC/PKCS5Padding", "BC");
+			SecureRandom IV = new SecureRandom();
+			byte IVarray[] = new byte[16];
+			IV.nextBytes(IVarray);
+			cipher.init(Cipher.ENCRYPT_MODE, sessionKey, new IvParameterSpec(IVarray));
+			SealedObject so = new SealedObject(msg, cipher);
+			Envelope encryptedMsg = new Envelope("ENV");
+			encryptedMsg.addObject(so);
+			encryptedMsg.addObject(IVarray);
+			return encryptedMsg;
+		}
+		catch (Exception e) {
+			System.out.println("Error: " + e);
+			e.printStackTrace();
+		}
+		return null;
+	}
 }
