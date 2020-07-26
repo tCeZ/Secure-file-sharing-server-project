@@ -30,10 +30,14 @@ public class FileServer extends Server {
 
 	public FileServer() {
 		super(SERVER_PORT, "FilePile");
+        gsAddress = "localhost";
+        gsPort = 8765;
 	}
 
 	public FileServer(int _port) {
 		super(_port, "FilePile");
+        gsAddress = "localhost";
+        gsPort = 8765;
 	}
 	
 	public void start() {
