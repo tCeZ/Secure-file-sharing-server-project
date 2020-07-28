@@ -86,7 +86,7 @@ public class GroupThread extends Thread
 					message = decryptEnv(message);
 					System.out.println("ENV: " + message.getMessage());
 					
-					if (message.getMessage().equals("GET")) // Client wants a token
+					/*if (message.getMessage().equals("GET")) // Client wants a token
 					{
 						String username = (String)message.getObjContents().get(0); // Get the username
 						String password = (String)message.getObjContents().get(1);
@@ -103,26 +103,26 @@ public class GroupThread extends Thread
 							response.addObject(yourToken);
 							output.writeObject(encryptEnv(response));
 						}
-					}
-					else if (message.getMessage().equals("CUSER")) //Client wants to create a user
+					}*/
+					if (message.getMessage().equals("CUSER")) //Client wants to create a user
 					{
-						if (message.getObjContents().size() < 3) {
+						if (message.getObjContents().size() < 2) {
 							response = new Envelope("FAIL");
+                            System.out.println("error1");
 						}
 						else {
 							response = new Envelope("FAIL");
-							
+							System.out.println("error2");
 							if (message.getObjContents().get(0) != null &&
-								message.getObjContents().get(1) != null &&
-								message.getObjContents().get(2) != null) {
+								message.getObjContents().get(1) != null) {
 								
 								String username = (String)message.getObjContents().get(0); // Extract the username
-								char[] password = (char[])message.getObjContents().get(1); // Extract the password
-								Token yourToken = (Token)message.getObjContents().get(2); // Extract the token
+								Token yourToken = (Token)message.getObjContents().get(1); // Extract the token
 								
 								// Check token's authenticity
 								if (checkTokenValid(yourToken)) {
-									if (createUser(username, yourToken)) {
+									if (createUser(username, yourToken)) 
+                                    {
 										response = new Envelope("OK"); // Success
 									}
 								}
@@ -130,7 +130,7 @@ public class GroupThread extends Thread
 						}
 						output.writeObject(encryptEnv(response));
 					}				
-					if(message.getMessage().equals("GETUL")) // authenticator wants userlist for token checking
+					else if(message.getMessage().equals("GETUL")) // authenticator wants userlist for token checking
 	                {
 	                    if(message.getObjContents().size() > 0)
 	                    {
@@ -158,13 +158,13 @@ public class GroupThread extends Thread
 						{
 							response = new Envelope("FAIL");
 							response.addObject(null);
-							output.writeObject(response);
+							output.writeObject(encryptEnv(response));
 						}
 	                    else if(userTokenName == null)
 	                    {
 	                        response = new Envelope("FAIL");
 							response.addObject(null);
-							output.writeObject(response);
+							output.writeObject(encryptEnv(response));
 	                    }
 						else
 						{
@@ -173,14 +173,14 @@ public class GroupThread extends Thread
 	                        {
 	                            response = new Envelope("FAIL");
 	                            response.addObject(null);
-	                            output.writeObject(response);
+	                            output.writeObject(encryptEnv(response));
 	                        
 	                        }
 							
 							//Respond to the client. On error, the client will receive a null token
 							response = new Envelope("OK");
 							response.addObject(yourToken);
-							output.writeObject(response);
+							output.writeObject(encryptEnv(response));
 						}
 					}
 					else if(message.getMessage().equals("CUSER")) //Client wants to create a user
@@ -208,7 +208,7 @@ public class GroupThread extends Thread
 							}
 						}
 						
-						output.writeObject(response);
+						output.writeObject(encryptEnv(response));
 					}
 					else if(message.getMessage().equals("DUSER")) //Client wants to delete a user
 					{
@@ -236,7 +236,7 @@ public class GroupThread extends Thread
 							}
 						}
 						
-						output.writeObject(response);
+						output.writeObject(encryptEnv(response));
 					}
 					else if(message.getMessage().equals("CGROUP")) //Client wants to create a group
 					{
@@ -265,7 +265,7 @@ public class GroupThread extends Thread
 	                            
 	                        }
 	                    }
-	                    output.writeObject(response);
+	                    output.writeObject(encryptEnv(response));
 					    /* TODO:  Write this handler */
 					}
 					else if(message.getMessage().equals("DGROUP")) //Client wants to delete a group
@@ -292,7 +292,7 @@ public class GroupThread extends Thread
 	                            }
 	                        }
 	                    }
-	                    output.writeObject(response);
+	                    output.writeObject(encryptEnv(response));
 					    /* TODO:  Write this handler */
 					}
 					else if(message.getMessage().equals("LMEMBERS")) //Client wants a list of members in a group
@@ -322,7 +322,7 @@ public class GroupThread extends Thread
 	                            }
 	                        }
 	                    }
-	                    output.writeObject(response);
+	                    output.writeObject(encryptEnv(response));
 					    /* TODO:  Write this handler */
 					}
 					else if(message.getMessage().equals("AUSERTOGROUP")) //Client wants to add user to a group
@@ -355,7 +355,7 @@ public class GroupThread extends Thread
 	                        
 	                        
 	                    }
-	                    output.writeObject(response);
+	                    output.writeObject(encryptEnv(response));
 					    /* TODO:  Write this handler */
 					}
 					else if(message.getMessage().equals("RUSERFROMGROUP")) //Client wants to remove user from a group
@@ -394,11 +394,12 @@ public class GroupThread extends Thread
 				{
 					socket.close(); //Close the socket
 					proceed = false; //End this communication loop
+                    System.exit(0);
 				}
 				else
 				{
 					response = new Envelope("FAIL"); //Server does not understand client request
-					output.writeObject(response);
+					output.writeObject(encryptEnv(response));
 				}
 
 			}while(proceed);	
@@ -416,6 +417,7 @@ public class GroupThread extends Thread
 		//Check that user exists
 		if(my_gs.userList.checkUser(username) && my_gs.userList.checkUser(userTokenName))
 		{
+            
             byte[] signature = null;
             boolean check = false;
             try
@@ -429,11 +431,13 @@ public class GroupThread extends Thread
             }
             catch(Exception e)
             {
+                e.printStackTrace();
                 return null;
             }
            
             
             check = my_gs.userList.verification(userTokenName, msg, signature);
+            
             if(check)
             {
                 UserToken yourToken = new Token(my_gs.name, username, my_gs.userList.getUserGroups(username),signature, msg);
