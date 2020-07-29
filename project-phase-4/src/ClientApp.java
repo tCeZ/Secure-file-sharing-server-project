@@ -4,6 +4,11 @@ import java.util.Arrays;
 import java.io.*;
 import java.security.*;
 import java.lang.*;
+import javax.crypto.*;
+import javax.crypto.spec.SecretKeySpec;
+import javax.crypto.spec.IvParameterSpec;
+import org.bouncycastle.jce.provider.BouncyCastleProvider;
+import java.math.BigInteger;
 
 public class ClientApp
 {
@@ -67,7 +72,7 @@ public class ClientApp
                 else 
                 {
                     System.out.println("Permission denied");
-                    g.disconnect();
+                    g.disconnect(g.getSessionKeyValue());
                         
                 }
             }
@@ -309,9 +314,9 @@ public class ClientApp
 
                                         
                                     case 0: 
-
+                                        
                                         System.out.println("Logging out!");
-                                        f.disconnect();
+                                        f.disconnect(f.getSessionKeyValue());
                                         conn2 = false;
                                         break;
 
@@ -467,8 +472,11 @@ public class ClientApp
                         break;
 
                     case 0: 
+                        
+                        
 
                         System.out.println("Logging out!");
+                        g.disconnect(g.getSessionKeyValue());
                         tokencheck = false; 
                         conn = false;
                         usrT = null; 

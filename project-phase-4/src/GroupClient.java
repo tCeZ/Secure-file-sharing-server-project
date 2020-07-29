@@ -71,6 +71,11 @@ public class GroupClient extends Client implements GroupClientInterface {
 		}
 		return false;
 	}
+    
+    public Key getSessionKeyValue()
+    {
+        return sessionKey;
+    }
 	
 	public PublicKey getPubKey() {
 		try {

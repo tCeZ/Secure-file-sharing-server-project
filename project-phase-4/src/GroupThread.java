@@ -45,6 +45,7 @@ public class GroupThread extends Thread
 				Envelope message = (Envelope)input.readObject();
 				System.out.println("Request received: " + message.getMessage());
 				Envelope response;
+                
 
 				// parse through publicly accessible messages
 				if (message.getMessage().equals("GETPUBKEY")) { // Client wants the public key
@@ -104,15 +105,17 @@ public class GroupThread extends Thread
 							output.writeObject(encryptEnv(response));
 						}
 					}*/
-					if (message.getMessage().equals("CUSER")) //Client wants to create a user
+                   
+					/*if (message.getMessage().equals("CUSER")) //Client wants to create a user
 					{
+                         
 						if (message.getObjContents().size() < 2) {
 							response = new Envelope("FAIL");
-                            System.out.println("error1");
+                           
 						}
 						else {
 							response = new Envelope("FAIL");
-							System.out.println("error2");
+							
 							if (message.getObjContents().get(0) != null &&
 								message.getObjContents().get(1) != null) {
 								
@@ -129,8 +132,8 @@ public class GroupThread extends Thread
 							}
 						}
 						output.writeObject(encryptEnv(response));
-					}				
-					else if(message.getMessage().equals("GETUL")) // authenticator wants userlist for token checking
+					}	*/			
+					if(message.getMessage().equals("GETUL")) // authenticator wants userlist for token checking
 	                {
 	                    if(message.getObjContents().size() > 0)
 	                    {
@@ -389,9 +392,10 @@ public class GroupThread extends Thread
                     }
                     
 				    
-				}
+				
 				else if(message.getMessage().equals("DISCONNECT")) //Client wants to disconnect
 				{
+                    
 					socket.close(); //Close the socket
 					proceed = false; //End this communication loop
                     System.exit(0);
@@ -401,6 +405,7 @@ public class GroupThread extends Thread
 					response = new Envelope("FAIL"); //Server does not understand client request
 					output.writeObject(encryptEnv(response));
 				}
+             }
 
 			}while(proceed);	
 		}
@@ -409,6 +414,7 @@ public class GroupThread extends Thread
 			System.err.println("Error: " + e.getMessage());
 			e.printStackTrace(System.err);
 		}
+        
 	}
 	
 	//Method to create tokens
@@ -841,6 +847,7 @@ public class GroupThread extends Thread
 		SealedObject so = (SealedObject)msg.getObjContents().get(0);
 		byte[] IVarray = (byte[])msg.getObjContents().get(1);
 		try {
+            
 			String algo = so.getAlgorithm();
 			Cipher envCipher = Cipher.getInstance(algo);
 			envCipher.init(Cipher.DECRYPT_MODE, sessionKey, new IvParameterSpec(IVarray));
@@ -850,6 +857,7 @@ public class GroupThread extends Thread
 			System.out.println("Error: " + e);
 			e.printStackTrace();
 		}
+        
 		return null;
 	}
 	

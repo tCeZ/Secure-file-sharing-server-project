@@ -1,5 +1,11 @@
 
 import java.util.List;
+import java.security.*;
+import org.bouncycastle.jce.provider.BouncyCastleProvider;
+import javax.crypto.*;
+import java.lang.*;
+import javax.crypto.spec.SecretKeySpec;
+import javax.crypto.spec.IvParameterSpec;
 
 /**
  * Interface describing the operations that must be supported by the
@@ -26,7 +32,7 @@ public interface FileClientInterface
      * Close down the connection to the file server.
      *
      */
-    public void disconnect();
+    public void disconnect(Key SessionKey);
 
 
     /**
