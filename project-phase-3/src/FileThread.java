@@ -85,6 +85,7 @@ public class FileThread extends Thread
 					response.addObject(cipherText);
 					output.writeObject(response);
 				}
+				
 				else if (env.getMessage().equals("ENV")) { // encrypted Envelope
 					// decrypt contents of encrypted Envelope and pass to branches below
 					Envelope e = decryptEnv(env);
